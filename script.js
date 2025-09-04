@@ -1,5 +1,6 @@
 const cepInput = document.getElementById('cepInput');
 const searchBtn = document.getElementById('searchBtn');
+const locationBtn = document.getElementById('locationBtn');
 const historyDiv = document.getElementById('history');
 const clearHistoryContainer = document.getElementById('clear-history-container');
 
@@ -149,7 +150,36 @@ const search = (cep) => {
         });
 };
 
+const searchByLocation = () => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.address && data.address.postcode) {
+                        const cep = data.address.postcode.replace('-', '');
+                        cepInput.value = cep;
+                        search(cep);
+                    } else {
+                        alert('Não foi possível encontrar o CEP para sua localização.');
+                    }
+                })
+                .catch(error => {
+                    alert('Ocorreu um erro ao buscar o CEP para sua localização.');
+                    console.error('Error:', error);
+                });
+        });
+    } else {
+        alert('Geolocalização não é suportada por este navegador.');
+    }
+};
+
 searchBtn.addEventListener('click', () => search());
+
+locationBtn.addEventListener('click', searchByLocation);
 
 cepInput.addEventListener('keyup', (event) => {
     if (event.key === 'Enter') {
