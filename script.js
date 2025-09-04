@@ -116,42 +116,50 @@ const search = (cep) => {
                 });
 
                 const address = `${data.logradouro}, ${data.localidade}, ${data.uf}`;
-                return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
-            }
-        })
-        .then(response => response.json())
-        .then(nominatimData => {
-            loadingDiv.style.display = 'none';
-            if (nominatimData.length > 0) {
-                const lat = nominatimData[0].lat;
-                const lon = nominatimData[0].lon;
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
+                    .then(response => response.json())
+                    .then(nominatimData => {
+                        loadingDiv.style.display = 'none';
+                        if (nominatimData.length > 0) {
+                            const lat = nominatimData[0].lat;
+                            const lon = nominatimData[0].lon;
 
-                mapDiv.style.display = 'block';
-                if (map) {
-                    map.remove();
-                }
-                map = L.map('map').setView([lat, lon], 15);
+                            mapDiv.style.display = 'block';
+                            if (map) {
+                                map.remove();
+                            }
+                            map = L.map('map').setView([lat, lon], 15);
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            }).addTo(map);
 
-                L.marker([lat, lon]).addTo(map)
-                    .bindPopup('Endereço aproximado.')
-                    .openPopup();
-            } else {
-                mapDiv.innerHTML = '<div class="alert alert-warning">Não foi possível encontrar as coordenadas para este endereço.</div>';
+                            L.marker([lat, lon]).addTo(map)
+                                .bindPopup('Endereço aproximado.')
+                                .openPopup();
+                        } else {
+                            mapDiv.innerHTML = '<div class="alert alert-warning">Não foi possível encontrar as coordenadas para este endereço.</div>';
+                        }
+                    })
+                    .catch(error => {
+                        loadingDiv.style.display = 'none';
+                        mapDiv.innerHTML = '<div class="alert alert-warning">Ocorreu um erro ao buscar as coordenadas para o mapa.</div>';
+                        console.error('Error fetching coordinates:', error);
+                    });
             }
         })
         .catch(error => {
             loadingDiv.style.display = 'none';
             resultDiv.innerHTML = '<div class="alert alert-danger">Ocorreu um erro ao buscar o CEP.</div>';
-            console.error('Error:', error);
+            console.error('Error fetching CEP:', error);
         });
 };
 
 const searchByLocation = () => {
     if (navigator.geolocation) {
+        locationBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Buscando...';
+        locationBtn.disabled = true;
+
         navigator.geolocation.getCurrentPosition(position => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
@@ -170,6 +178,10 @@ const searchByLocation = () => {
                 .catch(error => {
                     alert('Ocorreu um erro ao buscar o CEP para sua localização.');
                     console.error('Error:', error);
+                })
+                .finally(() => {
+                    locationBtn.innerHTML = 'Usar minha localização';
+                    locationBtn.disabled = false;
                 });
         });
     } else {
