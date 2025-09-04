@@ -1,5 +1,36 @@
 const cepInput = document.getElementById('cepInput');
 const searchBtn = document.getElementById('searchBtn');
+const historyDiv = document.getElementById('history');
+
+const getHistory = () => {
+    return JSON.parse(localStorage.getItem('cepHistory')) || [];
+};
+
+const addToHistory = (cep) => {
+    let history = getHistory();
+    if (!history.includes(cep)) {
+        history.unshift(cep);
+        history = history.slice(0, 5);
+        localStorage.setItem('cepHistory', JSON.stringify(history));
+    }
+};
+
+const displayHistory = () => {
+    const history = getHistory();
+    if (history.length > 0) {
+        const historyList = history.map(cep => `<li class="list-group-item">${cep}</li>`).join('');
+        historyDiv.innerHTML = `
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Histórico de Pesquisa</h5>
+                    <ul class="list-group list-group-flush">
+                        ${historyList}
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+};
 
 const search = () => {
     const cep = cepInput.value;
@@ -24,6 +55,8 @@ const search = () => {
                 loadingDiv.style.display = 'none';
                 resultDiv.innerHTML = '<div class="alert alert-danger">CEP não encontrado.</div>';
             } else {
+                addToHistory(cep);
+                displayHistory();
                 resultDiv.innerHTML = `
                     <div class="card">
                         <div class="card-body">
@@ -81,3 +114,5 @@ cepInput.addEventListener('keyup', (event) => {
         search();
     }
 });
+
+displayHistory();
