@@ -18,7 +18,7 @@ const addToHistory = (cep) => {
 const displayHistory = () => {
     const history = getHistory();
     if (history.length > 0) {
-        const historyList = history.map(cep => `<li class="list-group-item">${cep}</li>`).join('');
+        const historyList = history.map(cep => `<li class="list-group-item history-item" style="cursor: pointer;">${cep}</li>`).join('');
         historyDiv.innerHTML = `
             <div class="card mt-4">
                 <div class="card-body">
@@ -29,6 +29,14 @@ const displayHistory = () => {
                 </div>
             </div>
         `;
+
+        const historyItems = document.querySelectorAll('.history-item');
+        historyItems.forEach(item => {
+            item.addEventListener('click', () => {
+                cepInput.value = item.textContent;
+                search();
+            });
+        });
     }
 };
 
