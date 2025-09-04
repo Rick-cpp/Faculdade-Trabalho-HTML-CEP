@@ -1,5 +1,8 @@
-document.getElementById('searchBtn').addEventListener('click', () => {
-    const cep = document.getElementById('cepInput').value;
+const cepInput = document.getElementById('cepInput');
+const searchBtn = document.getElementById('searchBtn');
+
+const search = () => {
+    const cep = cepInput.value;
     const resultDiv = document.getElementById('result');
     const loadingDiv = document.getElementById('loading');
     const mapDiv = document.getElementById('map');
@@ -69,4 +72,12 @@ document.getElementById('searchBtn').addEventListener('click', () => {
             resultDiv.innerHTML = '<div class="alert alert-danger">Ocorreu um erro ao buscar o CEP.</div>';
             console.error('Error:', error);
         });
+};
+
+searchBtn.addEventListener('click', search);
+
+cepInput.addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') {
+        search();
+    }
 });
