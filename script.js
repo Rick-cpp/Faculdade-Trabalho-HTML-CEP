@@ -2,11 +2,6 @@ const cepInput = document.getElementById('cepInput');
 const searchBtn = document.getElementById('searchBtn');
 const historyDiv = document.getElementById('history');
 const clearHistoryContainer = document.getElementById('clear-history-container');
-const stateSelect = document.getElementById('state');
-const citySelect = document.getElementById('city');
-const streetInput = document.getElementById('street');
-const searchAddressBtn = document.getElementById('searchAddressBtn');
-const addressResultDiv = document.getElementById('address-result');
 
 const getHistory = () => {
     return JSON.parse(localStorage.getItem('cepHistory')) || [];
@@ -95,6 +90,7 @@ const search = (cep) => {
                                 <li class="list-group-item"><strong>Cidade:</strong> ${data.localidade}</li>
                                 <li class="list-group-item"><strong>Estado:</strong> ${data.uf}</li>
                             </ul>
+                            <button class="btn btn-sm btn-outline-secondary copy-address-btn mt-2">Copiar Endereço</button>
                         </div>
                     </div>
                 `;
@@ -105,6 +101,16 @@ const search = (cep) => {
                     copyCepBtn.textContent = 'Copiado!';
                     setTimeout(() => {
                         copyCepBtn.textContent = 'Copiar';
+                    }, 2000);
+                });
+
+                const copyAddressBtn = document.querySelector('.copy-address-btn');
+                copyAddressBtn.addEventListener('click', () => {
+                    const address = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}, ${data.cep}`;
+                    navigator.clipboard.writeText(address);
+                    copyAddressBtn.textContent = 'Copiado!';
+                    setTimeout(() => {
+                        copyAddressBtn.textContent = 'Copiar Endereço';
                     }, 2000);
                 });
 
@@ -143,96 +149,6 @@ const search = (cep) => {
         });
 };
 
-const loadStates = () => {
-    fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
-        .then(response => response.json())
-        .then(data => {
-            data.sort((a, b) => a.nome.localeCompare(b.nome));
-            data.forEach(state => {
-                const option = document.createElement('option');
-                option.value = state.sigla;
-                option.textContent = state.nome;
-                stateSelect.appendChild(option);
-            });
-        });
-};
-
-const loadCities = () => {
-    const state = stateSelect.value;
-    citySelect.innerHTML = '<option>Cidade</option>';
-    if (state) {
-        fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${state}/municipios`)
-            .then(response => response.json())
-            .then(data => {
-                data.sort((a, b) => a.nome.localeCompare(b.nome));
-                data.forEach(city => {
-                    const option = document.createElement('option');
-                    option.value = city.nome;
-                    option.textContent = city.nome;
-                    citySelect.appendChild(option);
-                });
-            });
-    }
-};
-
-const searchAddress = () => {
-    const state = stateSelect.value;
-    const city = citySelect.value;
-    const street = streetInput.value;
-
-    if (!state || !city || !street) {
-        addressResultDiv.innerHTML = '<div class="alert alert-danger">Por favor, preencha todos os campos.</div>';
-        return;
-    }
-
-    fetch(`https://viacep.com.br/ws/${state}/${city}/${street}/json/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.length === 0) {
-                addressResultDiv.innerHTML = '<div class="alert alert-warning">Nenhum CEP encontrado para este endereço.</div>';
-            } else {
-                const table = `
-                    <table class="table table-striped mt-4">
-                        <thead>
-                            <tr>
-                                <th>CEP</th>
-                                <th>Logradouro</th>
-                                <th>Bairro</th>
-                                <th>Cidade</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.map(address => `
-                                <tr class="address-row" style="cursor: pointer;" data-cep="${address.cep}">
-                                    <td>${address.cep}</td>
-                                    <td>${address.logradouro}</td>
-                                    <td>${address.bairro}</td>
-                                    <td>${address.localidade}</td>
-                                    <td>${address.uf}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-                addressResultDiv.innerHTML = table;
-
-                const addressRows = document.querySelectorAll('.address-row');
-                addressRows.forEach(row => {
-                    row.addEventListener('click', () => {
-                        const cep = row.dataset.cep;
-                        cepInput.value = cep;
-                        search(cep);
-                    });
-                });
-            }
-        })
-        .catch(error => {
-            addressResultDiv.innerHTML = '<div class="alert alert-danger">Ocorreu um erro ao buscar o endereço.</div>';
-            console.error('Error:', error);
-        });
-};
-
 searchBtn.addEventListener('click', () => search());
 
 cepInput.addEventListener('keyup', (event) => {
@@ -241,8 +157,4 @@ cepInput.addEventListener('keyup', (event) => {
     }
 });
 
-stateSelect.addEventListener('change', loadCities);
-searchAddressBtn.addEventListener('click', searchAddress);
-
 displayHistory();
-loadStates();
