@@ -59,8 +59,8 @@ const displayHistory = () => {
     }
 };
 
-const search = () => {
-    const cep = cepInput.value;
+const search = (cep) => {
+    cep = cep || cepInput.value;
     const resultDiv = document.getElementById('result');
     const loadingDiv = document.getElementById('loading');
     const mapDiv = document.getElementById('map');
@@ -195,7 +195,7 @@ const searchAddress = () => {
                         </thead>
                         <tbody>
                             ${data.map(address => `
-                                <tr>
+                                <tr class="address-row" style="cursor: pointer;" data-cep="${address.cep}">
                                     <td>${address.cep}</td>
                                     <td>${address.logradouro}</td>
                                     <td>${address.bairro}</td>
@@ -207,6 +207,15 @@ const searchAddress = () => {
                     </table>
                 `;
                 addressResultDiv.innerHTML = table;
+
+                const addressRows = document.querySelectorAll('.address-row');
+                addressRows.forEach(row => {
+                    row.addEventListener('click', () => {
+                        const cep = row.dataset.cep;
+                        cepInput.value = cep;
+                        search(cep);
+                    });
+                });
             }
         })
         .catch(error => {
@@ -215,7 +224,7 @@ const searchAddress = () => {
         });
 };
 
-searchBtn.addEventListener('click', search);
+searchBtn.addEventListener('click', () => search());
 
 cepInput.addEventListener('keyup', (event) => {
     if (event.key === 'Enter') {
