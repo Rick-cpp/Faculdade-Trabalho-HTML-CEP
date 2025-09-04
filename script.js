@@ -1,6 +1,7 @@
 const cepInput = document.getElementById('cepInput');
 const searchBtn = document.getElementById('searchBtn');
 const historyDiv = document.getElementById('history');
+const clearHistoryContainer = document.getElementById('clear-history-container');
 
 const getHistory = () => {
     return JSON.parse(localStorage.getItem('cepHistory')) || [];
@@ -13,6 +14,12 @@ const addToHistory = (cep) => {
         history = history.slice(0, 5);
         localStorage.setItem('cepHistory', JSON.stringify(history));
     }
+};
+
+const clearHistory = () => {
+    localStorage.removeItem('cepHistory');
+    historyDiv.innerHTML = '';
+    clearHistoryContainer.innerHTML = '';
 };
 
 const displayHistory = () => {
@@ -37,6 +44,13 @@ const displayHistory = () => {
                 search();
             });
         });
+
+        clearHistoryContainer.innerHTML = '<button id="clearHistoryBtn" class="btn btn-danger btn-sm">Limpar Histórico</button>';
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        clearHistoryBtn.addEventListener('click', clearHistory);
+    } else {
+        historyDiv.innerHTML = '';
+        clearHistoryContainer.innerHTML = '';
     }
 };
 
