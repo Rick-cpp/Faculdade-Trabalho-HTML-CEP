@@ -89,7 +89,7 @@ const search = (cep) => {
                         <div class="card-body">
                             <h5 class="card-title">Endereço Encontrado</h5>
                             <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>CEP:</strong> ${data.cep}</li>
+                                <li class="list-group-item"><strong>CEP:</strong> ${data.cep} <button class="btn btn-sm btn-outline-secondary copy-cep-btn" data-cep="${data.cep}">Copiar</button></li>
                                 <li class="list-group-item"><strong>Logradouro:</strong> ${data.logradouro}</li>
                                 <li class="list-group-item"><strong>Bairro:</strong> ${data.bairro}</li>
                                 <li class="list-group-item"><strong>Cidade:</strong> ${data.localidade}</li>
@@ -98,6 +98,15 @@ const search = (cep) => {
                         </div>
                     </div>
                 `;
+
+                const copyCepBtn = document.querySelector('.copy-cep-btn');
+                copyCepBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(copyCepBtn.dataset.cep);
+                    copyCepBtn.textContent = 'Copiado!';
+                    setTimeout(() => {
+                        copyCepBtn.textContent = 'Copiar';
+                    }, 2000);
+                });
 
                 const address = `${data.logradouro}, ${data.localidade}, ${data.uf}`;
                 return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
