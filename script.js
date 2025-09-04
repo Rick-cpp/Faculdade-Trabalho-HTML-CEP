@@ -117,7 +117,11 @@ const search = (cep) => {
                 });
 
                 const address = `${data.logradouro}, ${data.localidade}, ${data.uf}`;
-                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`, {
+                    headers: {
+                        'User-Agent': 'TrabalhoViaCEP/1.0 (your_email@example.com)' // Replace with your application name and email
+                    }
+                })
                     .then(response => response.json())
                     .then(nominatimData => {
                         loadingDiv.style.display = 'none';
