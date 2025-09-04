@@ -1,3 +1,5 @@
+let map;
+
 const cepInput = document.getElementById('cepInput');
 const searchBtn = document.getElementById('searchBtn');
 const locationBtn = document.getElementById('locationBtn');
@@ -60,7 +62,6 @@ const search = (cep) => {
     const resultDiv = document.getElementById('result');
     const loadingDiv = document.getElementById('loading');
     const mapDiv = document.getElementById('map');
-    let map;
 
     if (!cep) {
         resultDiv.innerHTML = '<div class="alert alert-danger">Por favor, digite um CEP.</div>';
