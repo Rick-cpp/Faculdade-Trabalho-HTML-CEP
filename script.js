@@ -2,13 +2,10 @@ let map;
 
 const cepInput = document.getElementById('cepInput');
 const searchBtn = document.getElementById('searchBtn');
-const locationBtn = document.getElementById('locationBtn');
 const historyDiv = document.getElementById('history');
 const clearHistoryContainer = document.getElementById('clear-history-container');
 
-const getHistory = () => {
-    return JSON.parse(localStorage.getItem('cepHistory')) || [];
-};
+const getHistory = () => JSON.parse(localStorage.getItem('cepHistory')) || [];
 
 const addToHistory = (cep) => {
     let history = getHistory();
@@ -19,6 +16,18 @@ const addToHistory = (cep) => {
     }
 };
 
+function formaCep(cep) {
+    const somenteNumeros = cep.replace(/\D/g, '');
+
+    if (!/^[0-9]{8}$|^[0-9]{5}-[0-9]{3}$/.test(somenteNumeros)) {
+        return undefined;
+    }
+
+    const cepFormatado = `${somenteNumeros.slice(0, 5)}-${somenteNumeros.slice(5)}`;
+    return cepFormatado.trim();
+}
+
+
 const clearHistory = () => {
     localStorage.removeItem('cepHistory');
     historyDiv.innerHTML = '';
@@ -28,7 +37,7 @@ const clearHistory = () => {
 const displayHistory = () => {
     const history = getHistory();
     if (history.length > 0) {
-        const historyList = history.map(cep => `<li class="list-group-item history-item" style="cursor: pointer;">${cep}</li>`).join('');
+        const historyList = history.map(cep => `<li class="list-group-item history-item" style="cursor:pointer">${cep}</li>`).join('');
         historyDiv.innerHTML = `
             <div class="card mt-4">
                 <div class="card-body">
@@ -40,8 +49,7 @@ const displayHistory = () => {
             </div>
         `;
 
-        const historyItems = document.querySelectorAll('.history-item');
-        historyItems.forEach(item => {
+        document.querySelectorAll('.history-item').forEach(item => {
             item.addEventListener('click', () => {
                 cepInput.value = item.textContent;
                 search();
@@ -49,8 +57,7 @@ const displayHistory = () => {
         });
 
         clearHistoryContainer.innerHTML = '<button id="clearHistoryBtn" class="btn btn-danger btn-sm">Limpar Histórico</button>';
-        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-        clearHistoryBtn.addEventListener('click', clearHistory);
+        document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
     } else {
         historyDiv.innerHTML = '';
         clearHistoryContainer.innerHTML = '';
@@ -59,6 +66,7 @@ const displayHistory = () => {
 
 const search = (cep) => {
     cep = cep || cepInput.value;
+    cep = formaCep(cep)
     const resultDiv = document.getElementById('result');
     const loadingDiv = document.getElementById('loading');
     const mapDiv = document.getElementById('map');
@@ -72,25 +80,28 @@ const search = (cep) => {
     resultDiv.innerHTML = '';
     mapDiv.style.display = 'none';
 
-    fetch(`https://viacep.com.br/ws/${cep}/json/`)
-        .then(response => response.json())
+    fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('CEP não encontrado');
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.erro) {
-                loadingDiv.style.display = 'none';
-                resultDiv.innerHTML = '<div class="alert alert-danger">CEP não encontrado.</div>';
-            } else {
-                addToHistory(cep);
+            if (data.cep) {
+                addToHistory(data.cep);
                 displayHistory();
+                console.log(data)
                 resultDiv.innerHTML = `
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Endereço Encontrado</h5>
                             <ul class="list-group list-group-flush">
                                 <li class="list-group-item"><strong>CEP:</strong> ${data.cep} <button class="btn btn-sm btn-outline-secondary copy-cep-btn" data-cep="${data.cep}">Copiar</button></li>
-                                <li class="list-group-item"><strong>Logradouro:</strong> ${data.logradouro}</li>
-                                <li class="list-group-item"><strong>Bairro:</strong> ${data.bairro}</li>
-                                <li class="list-group-item"><strong>Cidade:</strong> ${data.localidade}</li>
-                                <li class="list-group-item"><strong>Estado:</strong> ${data.uf}</li>
+                                <li class="list-group-item"><strong>Logradouro:</strong> ${data.street}</li>
+                                <li class="list-group-item"><strong>Bairro:</strong> ${data.neighborhood}</li>
+                                <li class="list-group-item"><strong>Cidade:</strong> ${data.city}</li>
+                                <li class="list-group-item"><strong>Estado:</strong> ${data.state}</li>
                             </ul>
                             <button class="btn btn-sm btn-outline-secondary copy-address-btn mt-2">Copiar Endereço</button>
                         </div>
@@ -101,107 +112,61 @@ const search = (cep) => {
                 copyCepBtn.addEventListener('click', () => {
                     navigator.clipboard.writeText(copyCepBtn.dataset.cep);
                     copyCepBtn.textContent = 'Copiado!';
-                    setTimeout(() => {
-                        copyCepBtn.textContent = 'Copiar';
-                    }, 2000);
+                    setTimeout(() => copyCepBtn.textContent = 'Copiar', 2000);
                 });
 
                 const copyAddressBtn = document.querySelector('.copy-address-btn');
                 copyAddressBtn.addEventListener('click', () => {
-                    const address = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}, ${data.cep}`;
+                    const address = `${data.street}, ${data.neighborhood}, ${data.city} - ${data.state}, ${data.cep}`;
                     navigator.clipboard.writeText(address);
                     copyAddressBtn.textContent = 'Copiado!';
-                    setTimeout(() => {
-                        copyAddressBtn.textContent = 'Copiar Endereço';
-                    }, 2000);
+                    setTimeout(() => copyAddressBtn.textContent = 'Copiar Endereço', 2000);
                 });
 
-                const address = `${data.logradouro}, ${data.localidade}, ${data.uf}`;
-                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`, {
-                    headers: {
-                        'User-Agent': 'TrabalhoViaCEP/1.0 (your_email@example.com)' // Replace with your application name and email
+                loadingDiv.style.display = 'none';
+                if (data.location && data.location.coordinates) {
+                    const { latitude, longitude } = data.location.coordinates;
+
+                    if (latitude == undefined || longitude == undefined) {
+                        mapDiv.innerHTML = '<div class="alert alert-warning">Não foi possível encontrar as coordenadas para este endereço.</div>';
+                        return;
+
                     }
-                })
-                    .then(response => response.json())
-                    .then(nominatimData => {
-                        loadingDiv.style.display = 'none';
-                        if (nominatimData.length > 0) {
-                            const lat = nominatimData[0].lat;
-                            const lon = nominatimData[0].lon;
+                    mapDiv.style.display = 'block';
+                    if (map) map.remove();
 
-                            mapDiv.style.display = 'block';
-                            if (map) {
-                                map.remove();
-                            }
-                            map = L.map('map').setView([lat, lon], 15);
+                    map = L.map('map').setView([latitude, longitude], 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
 
-                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            }).addTo(map);
-
-                            L.marker([lat, lon]).addTo(map)
-                                .bindPopup('Endereço aproximado.')
-                                .openPopup();
-                        } else {
-                            mapDiv.innerHTML = '<div class="alert alert-warning">Não foi possível encontrar as coordenadas para este endereço.</div>';
-                        }
-                    })
-                    .catch(error => {
-                        loadingDiv.style.display = 'none';
-                        mapDiv.innerHTML = '<div class="alert alert-warning">Ocorreu um erro ao buscar as coordenadas para o mapa.</div>';
-                        console.error('Error fetching coordinates:', error);
-                    });
+                    L.marker([latitude, longitude]).addTo(map)
+                        .bindPopup('Endereço aproximado.')
+                        .openPopup();
+                } else {
+                    mapDiv.innerHTML = '<div class="alert alert-warning">Não foi possível encontrar as coordenadas para este endereço.</div>';
+                }
+            } else {
+                loadingDiv.style.display = 'none';
+                resultDiv.innerHTML = '<div class="alert alert-danger">CEP não encontrado.</div>';
             }
         })
-        .catch(error => {
+        .catch(err => {
             loadingDiv.style.display = 'none';
-            resultDiv.innerHTML = '<div class="alert alert-danger">Ocorreu um erro ao buscar o CEP.</div>';
-            console.error('Error fetching CEP:', error);
+            resultDiv.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+            console.error('BrasilAPI error:', err);
         });
 };
 
-const searchByLocation = () => {
-    if (navigator.geolocation) {
-        locationBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Buscando...';
-        locationBtn.disabled = true;
-
-        navigator.geolocation.getCurrentPosition(position => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.address && data.address.postcode) {
-                        const cep = data.address.postcode.replace('-', '');
-                        cepInput.value = cep;
-                        search(cep);
-                    } else {
-                        alert('Não foi possível encontrar o CEP para sua localização.');
-                    }
-                })
-                .catch(error => {
-                    alert('Ocorreu um erro ao buscar o CEP para sua localização.');
-                    console.error('Error:', error);
-                })
-                .finally(() => {
-                    locationBtn.innerHTML = 'Usar minha localização';
-                    locationBtn.disabled = false;
-                });
-        });
-    } else {
-        alert('Geolocalização não é suportada por este navegador.');
-    }
-};
-
-searchBtn.addEventListener('click', () => search());
-
-locationBtn.addEventListener('click', searchByLocation);
-
-cepInput.addEventListener('keyup', (event) => {
-    if (event.key === 'Enter') {
-        search();
+document.addEventListener("keydown", (event) => {
+    if (event.key == "Enter") {
+        if (cepInput.matches(":focus")) {
+            search()
+        }
     }
 });
+
+searchBtn.addEventListener('click', () => search());
+cepInput.addEventListener('keyup', e => { if (e.key === 'Enter') search(); });
 
 displayHistory();
